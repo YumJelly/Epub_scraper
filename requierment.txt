@@ -1,0 +1,4 @@
+ebooklib
+uuid
+beautifulsoup4
+requests

@@ -2,10 +2,14 @@ import requests
 from bs4 import BeautifulSoup
 from ebooklib import epub
 import uuid
-
+import os
 
 def scraper_for_quanben5(base_url: str, target_url: str, epub_folder_path: str):
     
+    # Create a folder to store the epub files
+    if not os.path.exists(epub_folder_path):
+        os.makedirs(epub_folder_path)
+
     # Custom headers using a browser user-agent
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
@@ -66,8 +70,8 @@ def scraper_for_quanben5(base_url: str, target_url: str, epub_folder_path: str):
         print(f"Failed to retrieve the webpage: Status code {response.status_code}")
 
 if __name__ == '__main__':
-    # change the target_url to the book you want to scrap
     base_url = 'https://big5.quanben5.com'
+    # change target_url to the book you want to download
     target_url = 'https://big5.quanben5.com/n/doushentianxia/xiaoshuo.html'
     epub_folder_path = './epub/'
     scraper_for_quanben5(base_url, target_url, epub_folder_path)
