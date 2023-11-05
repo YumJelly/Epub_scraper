@@ -3,8 +3,28 @@ from bs4 import BeautifulSoup
 from ebooklib import epub
 import uuid
 import os
+import urllib
+from PIL import Image, ImageDraw, ImageFont
 
-def scraper_for_quanben5(base_url: str, target_url: str, epub_folder_path: str):
+
+def draw_text(d: ImageDraw, text: str, position: tuple, font: ImageFont, max_width: int):
+        words = text.split()
+        lines = []
+        current_line = words[0]
+        for word in words[1:]:
+            if d.textsize(current_line + ' ' + word, font=font)[0] <= max_width:
+                current_line += ' ' + word
+            else:
+                lines.append(current_line)
+                current_line = word
+        lines.append(current_line)
+        y_text = position[1]
+        for line in lines:
+            width, height = d.textsize(line, font=font)
+            d.text((position[0], y_text), line, font=font, fill=(0, 0, 0))
+            y_text += height
+
+def scraper_for_quanben5(base_url: str, target_url: str, epub_folder_path: str, replace_book_cover: bool = True):
     
     # Create a folder to store the epub files
     if not os.path.exists(epub_folder_path):
@@ -39,6 +59,23 @@ def scraper_for_quanben5(base_url: str, target_url: str, epub_folder_path: str):
         book.add_author(author_name)
         book.add_metadata('DC', 'description', book_description)
 
+        book_cover_url = soup.find('div', class_='pic').find('img').get('src')
+        if book_cover_url is not None and not replace_book_cover :
+            print(book_cover_url)
+            # Download the book cover image
+            urllib.request.urlretrieve(book_cover_url, f"{epub_folder_path}{book_title}.jpg")
+            book.set_cover(f"{book_title}.jpg", open(f"{epub_folder_path}{book_title}.jpg", 'rb').read())
+        else:
+            img = Image.new('RGB', (600, 800), color = (255, 255, 255))
+            d = ImageDraw.Draw(img)
+            font = ImageFont.truetype('TWSung.otf', 24)
+            position = (10, 10)
+            max_width = img.width - 20
+            draw_text(d, book_title, position, font, max_width)
+            img.save(f"{epub_folder_path}{book_title}.jpg")
+            book.set_cover(f"{book_title}.jpg", open(f"{epub_folder_path}{book_title}.jpg", 'rb').read())
+            print("No book cover found or you want to replace it, So I created one for you.")
+        
         c = 0
         # Add chapters to the epub file
         for li in li_elements:
@@ -56,18 +93,26 @@ def scraper_for_quanben5(base_url: str, target_url: str, epub_folder_path: str):
                 # Parse the content of the response using BeautifulSoup
                 chapter_soup = BeautifulSoup(chapter_response.content, 'html.parser')
                 # Find the chapter content
-                chapter_content = chapter_soup.find('div', id='content').get_text()
+                # chapter_content = chapter_soup.find('div', id='content').get_text() # this will get the text only
+                chapter_lines = chapter_soup.find('div', id='content').find_all('p') # this will get the text with html tags
+                chapter_lines = str().join(str(line) for line in chapter_lines)
+                # print(chapter_lines)
                 # Create a chapter
-                chapter = epub.EpubHtml(title=chapter_name, file_name=f'chapter_{chapter_name}.xhtml', lang='en')
-                chapter.content = chapter_content
+                chapter = epub.EpubHtml(title=chapter_name, file_name=f'chapter_{chapter_name}.xhtml', lang='zh')
+                chapter.content = chapter_lines
                 # Add the chapter to the book
                 book.add_item(chapter)
                 book.toc.append(chapter)
                 book.spine.append(chapter)
+            if c == 2:
+                break
         # Create the epub file
         epub.write_epub(epub_folder_path + book_title + ".epub", book, {})
     else:
         print(f"Failed to retrieve the webpage: Status code {response.status_code}")
+    
+    
+
 
 if __name__ == '__main__':
     base_url = 'https://big5.quanben5.com'
