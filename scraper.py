@@ -104,8 +104,6 @@ def scraper_for_quanben5(base_url: str, target_url: str, epub_folder_path: str, 
                 book.add_item(chapter)
                 book.toc.append(chapter)
                 book.spine.append(chapter)
-            if c == 2:
-                break
         # Create the epub file
         epub.write_epub(epub_folder_path + book_title + ".epub", book, {})
     else:
