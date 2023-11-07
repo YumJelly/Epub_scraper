@@ -59,8 +59,6 @@ def scraper_for_quanben5(base_url: str, target_url: str, epub_folder_path: str, 
         book.add_author(author_name)
         book.add_metadata('DC', 'description', book_description)
 
-        
-
         book_cover_url = soup.find('div', class_='pic').find('img').get('src')
         if book_cover_url is not None and not replace_book_cover :
             print(book_cover_url)
@@ -126,8 +124,6 @@ def scraper_for_quanben5(base_url: str, target_url: str, epub_folder_path: str, 
                 book.add_item(chapter)
                 book.toc.append(chapter)
                 book.spine.append(chapter)
-            if c == 2:
-                break
 
         book.add_item(nav_css)
         # write to the file
